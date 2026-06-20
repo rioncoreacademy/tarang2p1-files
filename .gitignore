@@ -1,4 +1,4 @@
-# Block everything — only .enc files may be committed
+# Block everything — only .enc files and README may be committed
 *
 
 # Allow repo infrastructure
@@ -7,3 +7,8 @@
 
 # The only data files allowed are encrypted Verilog
 !*.enc
+
+# Allow README files (mywork/README.md)
+!README.md
+!mywork/
+!mywork/README.md
