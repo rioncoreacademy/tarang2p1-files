@@ -31,6 +31,12 @@
 # LABS lives inside WORK (~/lab/.build) rather than as a sibling folder —
 # one top-level directory for students to think about, not two.
 #
+# vvp is always run with cwd set to LABS (`cd $(LABS) && vvp ...`) — if a
+# testbench's $dumpfile() uses a bare relative filename, the .vcd it writes
+# needs to land inside LABS (and stay there), not escape into ~/lab itself
+# where chipcraft-sweep.sh would otherwise treat it as stray plaintext and
+# encrypt it.
+#
 # WORK/LABS can be overridden: make WORK=~/mywork LABS=~/scratch
 
 WORK    ?= $(HOME)/lab
@@ -80,7 +86,7 @@ compile: _decrypt
 sim:
 	@test -f $(SIM_OUT) || { echo "$(YELLOW)No build found — running 'make compile' first…$(RESET)"; $(MAKE) --no-print-directory compile; }
 	@echo "$(YELLOW)Running simulation …$(RESET)"
-	@vvp $(SIM_OUT)
+	@cd $(LABS) && vvp sim.vvp
 	@echo "$(GREEN)Simulation complete.$(RESET)"
 	@vcd=$$(ls $(LABS)/*.vcd 2>/dev/null | head -1); \
 	[ -n "$$vcd" ] && echo "$(GREEN)Waveform: $$(basename $$vcd)  →  run 'make wave' to open GTKWave$(RESET)" || true
@@ -102,7 +108,7 @@ run: _decrypt
 	$(MAKE) --no-print-directory _shred; \
 	[ $$rc -eq 0 ] || exit $$rc
 	@echo "$(YELLOW)Running $(FILE) …$(RESET)"
-	@vvp $(LABS)/$(FILE).vvp
+	@cd $(LABS) && vvp $(FILE).vvp
 	@echo "$(GREEN)Done.$(RESET)"
 
 # Bare name shorthand: make counter  →  compiles + runs counter.v
