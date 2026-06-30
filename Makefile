@@ -28,7 +28,7 @@
 # Files are flattened by basename into LABS for compiling — two .v.enc
 # files with the same name (one top-level, one in mywork/) would collide.
 #
-# LABS lives inside WORK (~/lab/.build) rather than as a sibling folder —
+# LABS lives inside WORK (~/lab/build) rather than as a sibling folder —
 # one top-level directory for students to think about, not two.
 #
 # vvp is always run with cwd set to LABS (`cd $(LABS) && vvp ...`) — if a
@@ -40,7 +40,7 @@
 # WORK/LABS can be overridden: make WORK=~/mywork LABS=~/scratch
 
 WORK    ?= $(HOME)/lab
-LABS    ?= $(WORK)/.build
+LABS    ?= $(WORK)/build
 FILE    ?= counter
 KEYFILE := $(HOME)/.chipcraft_key
 SIM_OUT := $(LABS)/sim.vvp
