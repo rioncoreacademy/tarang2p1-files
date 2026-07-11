@@ -1,4 +1,4 @@
-# mywork/ — Your Personal Lab Files
+# mywork/ — Your Personal Files
 
 Save your own Verilog designs here, directly as encrypted files.
 

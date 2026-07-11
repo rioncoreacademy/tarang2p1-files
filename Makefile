@@ -1,4 +1,4 @@
-# Tarang2_dp1 Lab — Verilog compile & simulate
+# Tarang2_dp1 — Verilog compile & simulate
 #
 # Usage (from any directory):
 #   make                   – compile + simulate (all files with testbench)
