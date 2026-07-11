@@ -1,4 +1,4 @@
-# ChipCraft Lab — Verilog compile & simulate
+# Tarang2_dp1 Lab — Verilog compile & simulate
 #
 # Usage (from any directory):
 #   make                   – compile + simulate (all files with testbench)
@@ -12,14 +12,14 @@
 # Source files are encrypted at rest as *.v.enc, directly under ~/lab/ or
 # ~/lab/mywork/ — this Makefile is for self-contained single-testbench
 # designs like counter.v, NOT multi-file projects with their own build
-# system (e.g. tarang2_dp1 — use `chipcraft-tree shell tarang2_dp1` for
+# system (e.g. tarang2_dp1 — use `tarang2-dp1-tree shell tarang2_dp1` for
 # that instead, see HOW_IT_WORKS.md). Deliberately NOT recursive any
 # deeper than mywork/ — a fully recursive find would sweep in unrelated
 # designs nested elsewhere under ~/lab (e.g. tarang2_dp1's own .v files)
 # and compile them all together by mistake.
 #
 # Editing happens in gvim, which decrypts/encrypts entirely in memory and
-# never writes plaintext .v files (see tools/chipcraft-crypt.vim). iverilog
+# never writes plaintext .v files (see tools/tarang2-dp1-crypt.vim). iverilog
 # is a separate process and can only read real files, so this Makefile
 # decrypts just-in-time right before compiling and shreds the plaintext the
 # moment iverilog exits — plaintext source exists on disk only for the
@@ -34,7 +34,7 @@
 # vvp is always run with cwd set to LABS (`cd $(LABS) && vvp ...`) — if a
 # testbench's $dumpfile() uses a bare relative filename, the .vcd it writes
 # needs to land inside LABS (and stay there), not escape into ~/lab itself
-# where chipcraft-sweep.sh would otherwise treat it as stray plaintext and
+# where tarang2-dp1-sweep.sh would otherwise treat it as stray plaintext and
 # encrypt it.
 #
 # WORK/LABS can be overridden: make WORK=~/mywork LABS=~/scratch
@@ -42,7 +42,7 @@
 WORK    ?= $(HOME)/lab
 LABS    ?= $(WORK)/build
 FILE    ?= counter
-KEYFILE := $(HOME)/.chipcraft_key
+KEYFILE := $(HOME)/.tarang2-dp1_key
 SIM_OUT := $(LABS)/sim.vvp
 
 GREEN  := \033[0;32m
@@ -58,7 +58,7 @@ all: compile sim
 # just before compiling.
 _decrypt:
 	@mkdir -p $(LABS)
-	@test -f $(KEYFILE) || { echo "ChipCraft: no key at $(KEYFILE) — run inside the lab container."; exit 1; }
+	@test -f $(KEYFILE) || { echo "Tarang2_dp1: no key at $(KEYFILE) — run inside the lab container."; exit 1; }
 	@KEY=$$(cat $(KEYFILE)); \
 	found=0; \
 	for enc in $(WORK)/*.v.enc $(WORK)/mywork/*.v.enc; do \
@@ -66,7 +66,7 @@ _decrypt:
 	  out="$(LABS)/$$(basename "$${enc%.enc}")"; \
 	  openssl enc -d -aes-256-cbc -pbkdf2 -k "$$KEY" -in "$$enc" -out "$$out" 2>/dev/null && found=1; \
 	done; \
-	[ "$$found" = "1" ] || { echo "ChipCraft: no .v.enc source files found in $(WORK) or $(WORK)/mywork"; exit 1; }
+	[ "$$found" = "1" ] || { echo "Tarang2_dp1: no .v.enc source files found in $(WORK) or $(WORK)/mywork"; exit 1; }
 
 _shred:
 	@find $(LABS) -maxdepth 1 -name '*.v' -exec shred -u {} \; 2>/dev/null \

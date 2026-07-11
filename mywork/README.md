@@ -7,7 +7,7 @@ Save your own Verilog designs here, directly as encrypted files.
 1. Open a new filename ending in `.v.enc` here in gvim — it doesn't need to
    exist yet
 2. Write your design and save with `:w` — gvim encrypts the buffer straight
-   to that file (see `tools/chipcraft-crypt.vim`)
+   to that file (see `tools/tarang2-dp1-crypt.vim`)
 3. Commit and push the `.enc` file to save your work to GitHub
 
 Plaintext is never written to disk at any point — gvim decrypts/encrypts
