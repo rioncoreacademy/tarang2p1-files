@@ -12,14 +12,14 @@
 # Source files are encrypted at rest as *.v.enc, directly under ~/lab/ or
 # ~/lab/mywork/ — this Makefile is for self-contained single-testbench
 # designs like counter.v, NOT multi-file projects with their own build
-# system (e.g. tarang2_dp1 — use `tarang2-dp1-tree shell tarang2_dp1` for
+# system (e.g. tarang2_dp1 — use `tarang2p1-tree shell tarang2_dp1` for
 # that instead, see HOW_IT_WORKS.md). Deliberately NOT recursive any
 # deeper than mywork/ — a fully recursive find would sweep in unrelated
 # designs nested elsewhere under ~/lab (e.g. tarang2_dp1's own .v files)
 # and compile them all together by mistake.
 #
 # Editing happens in gvim, which decrypts/encrypts entirely in memory and
-# never writes plaintext .v files (see tools/tarang2-dp1-crypt.vim). iverilog
+# never writes plaintext .v files (see tools/tarang2p1-crypt.vim). iverilog
 # is a separate process and can only read real files, so this Makefile
 # decrypts just-in-time right before compiling and shreds the plaintext the
 # moment iverilog exits — plaintext source exists on disk only for the
@@ -34,7 +34,7 @@
 # vvp is always run with cwd set to LABS (`cd $(LABS) && vvp ...`) — if a
 # testbench's $dumpfile() uses a bare relative filename, the .vcd it writes
 # needs to land inside LABS (and stay there), not escape into ~/lab itself
-# where tarang2-dp1-sweep.sh would otherwise treat it as stray plaintext and
+# where tarang2p1-sweep.sh would otherwise treat it as stray plaintext and
 # encrypt it.
 #
 # WORK/LABS can be overridden: make WORK=~/mywork LABS=~/scratch
@@ -42,7 +42,7 @@
 WORK    ?= $(HOME)/lab
 LABS    ?= $(WORK)/build
 FILE    ?= counter
-KEYFILE := $(HOME)/.tarang2-dp1_key
+KEYFILE := $(HOME)/.tarang2p1_key
 SIM_OUT := $(LABS)/sim.vvp
 
 GREEN  := \033[0;32m
