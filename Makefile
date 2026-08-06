@@ -9,27 +9,21 @@
 #   make counter           – compile + simulate counter.v directly
 #   make clean             – remove build outputs
 #
-# Source files are encrypted at rest as *.v.enc, directly under ~/lab/ or
-# ~/lab/mywork/ — this Makefile is for self-contained single-testbench
-# designs like counter.v, NOT multi-file projects with their own build
-# system (e.g. tarang2_dp1 — use `tarang2p1-tree shell tarang2_dp1` for
-# that instead, see HOW_IT_WORKS.md). Deliberately NOT recursive any
-# deeper than mywork/ — a fully recursive find would sweep in unrelated
-# designs nested elsewhere under ~/lab (e.g. tarang2_dp1's own .v files)
-# and compile them all together by mistake.
+# Source lives decrypted in LABS (~/lab/build) already — tarang2p1-decrypt-all.sh
+# populates it once at container startup and tarang2p1-sweep.sh keeps it synced
+# with the encrypted *.v.enc under WORK for the whole session. This Makefile
+# just compiles what's already there — it no longer does its own decrypt/shred
+# step, so it follows the same always-decrypted-in-build model as the rest of
+# the lab tooling instead of a separate narrower one.
 #
-# Editing happens in gvim, which decrypts/encrypts entirely in memory and
-# never writes plaintext .v files (see tools/tarang2p1-crypt.vim). iverilog
-# is a separate process and can only read real files, so this Makefile
-# decrypts just-in-time right before compiling and shreds the plaintext the
-# moment iverilog exits — plaintext source exists on disk only for the
-# duration of that one compile step, not for the whole session.
+# This Makefile is for self-contained single-testbench designs like counter.v,
+# NOT multi-file projects with their own build system (e.g. tarang2_dp1 — use
+# `tarang2p1-tree shell tarang2_dp1` for that instead, see HOW_IT_WORKS.md).
 #
-# Files are flattened by basename into LABS for compiling — two .v.enc
-# files with the same name (one top-level, one in mywork/) would collide.
-#
-# LABS lives inside WORK (~/lab/build) rather than as a sibling folder —
-# one top-level directory for students to think about, not two.
+# Looks for sources in LABS's top level and LABS/mywork/ only (matching WORK's
+# top level and WORK/mywork/) — NOT a full recursive find, which would sweep
+# in unrelated designs nested elsewhere under LABS (e.g. tarang2_dp1's own .v
+# files) and compile them all together by mistake.
 #
 # vvp is always run with cwd set to LABS (`cd $(LABS) && vvp ...`) — if a
 # testbench's $dumpfile() uses a bare relative filename, the .vcd it writes
@@ -42,45 +36,22 @@
 WORK    ?= $(HOME)/lab
 LABS    ?= $(WORK)/build
 FILE    ?= counter
-KEYFILE := $(HOME)/.tarang2p1_key
 SIM_OUT := $(LABS)/sim.vvp
 
 GREEN  := \033[0;32m
 YELLOW := \033[0;33m
 RESET  := \033[0m
 
-.PHONY: all compile sim wave run clean _decrypt _shred
+.PHONY: all compile sim wave run clean
 
 all: compile sim
 
-# Decrypt *.v.enc from WORK's top level and WORK/mywork/ only (NOT a full
-# recursive find — see header comment) into LABS, flattened by filename,
-# just before compiling.
-_decrypt:
-	@mkdir -p $(LABS)
-	@test -f $(KEYFILE) || { echo "Tarang2_dp1: no key at $(KEYFILE) — run inside the lab container."; exit 1; }
-	@KEY=$$(cat $(KEYFILE)); \
-	found=0; \
-	for enc in $(WORK)/*.v.enc $(WORK)/mywork/*.v.enc; do \
-	  [ -f "$$enc" ] || continue; \
-	  out="$(LABS)/$$(basename "$${enc%.enc}")"; \
-	  openssl enc -d -aes-256-cbc -pbkdf2 -k "$$KEY" -in "$$enc" -out "$$out" 2>/dev/null && found=1; \
-	done; \
-	[ "$$found" = "1" ] || { echo "Tarang2_dp1: no .v.enc source files found in $(WORK) or $(WORK)/mywork"; exit 1; }
-
-_shred:
-	@find $(LABS) -maxdepth 1 -name '*.v' -exec shred -u {} \; 2>/dev/null \
-	  || find $(LABS) -maxdepth 1 -name '*.v' -delete 2>/dev/null \
-	  || true
-
-compile: _decrypt
+compile:
 	@set -e; \
-	TB=$$(ls $(LABS)/tb_*.v 2>/dev/null | head -1); \
-	SRCS=$$(ls $(LABS)/*.v 2>/dev/null); \
+	SRCS=$$(ls $(LABS)/*.v $(LABS)/mywork/*.v 2>/dev/null); \
+	[ -n "$$SRCS" ] || { echo "Tarang2_dp1: no .v source files found in $(LABS) or $(LABS)/mywork — is the lab container's decrypt/sweep running?"; exit 1; }; \
 	echo "$(GREEN)Compiling: $$(basename -a $$SRCS)$(RESET)"; \
-	iverilog -g2012 -Wall -o $(SIM_OUT) $$SRCS; rc=$$?; \
-	$(MAKE) --no-print-directory _shred; \
-	exit $$rc
+	iverilog -g2012 -Wall -o $(SIM_OUT) $$SRCS
 	@echo "$(GREEN)Done — run 'make sim' to simulate$(RESET)"
 
 sim:
@@ -101,15 +72,14 @@ wave: sim
 	fi
 
 # Single-file: make run FILE=counter
-run: _decrypt
-	@test -f $(LABS)/$(FILE).v || { echo "No such design: $(FILE)"; $(MAKE) --no-print-directory _shred; exit 1; }
-	@echo "$(GREEN)Compiling: $(FILE).v$(RESET)"
-	@iverilog -g2012 -Wall -o $(LABS)/$(FILE).vvp $(LABS)/$(FILE).v; rc=$$?; \
-	$(MAKE) --no-print-directory _shred; \
-	[ $$rc -eq 0 ] || exit $$rc
-	@echo "$(YELLOW)Running $(FILE) …$(RESET)"
-	@cd $(LABS) && vvp $(FILE).vvp
-	@echo "$(GREEN)Done.$(RESET)"
+run:
+	@SRC=$$(ls $(LABS)/$(FILE).v $(LABS)/mywork/$(FILE).v 2>/dev/null | head -1); \
+	[ -n "$$SRC" ] || { echo "No such design: $(FILE)"; exit 1; }; \
+	echo "$(GREEN)Compiling: $$(basename $$SRC)$(RESET)"; \
+	iverilog -g2012 -Wall -o $(LABS)/$(FILE).vvp "$$SRC"; \
+	echo "$(YELLOW)Running $(FILE) …$(RESET)"; \
+	cd $(LABS) && vvp $(FILE).vvp; \
+	echo "$(GREEN)Done.$(RESET)"
 
 # Bare name shorthand: make counter  →  compiles + runs counter.v
 %:
